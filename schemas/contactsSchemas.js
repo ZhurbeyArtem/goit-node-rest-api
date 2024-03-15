@@ -40,3 +40,8 @@ export const updateContactSchema = Joi.object({
     "any.required": "Phone number is required",
   }),
 });
+export const updateContactFavoriteSchema = Joi.object({
+  favorite: Joi.boolean()
+    .required()
+    .messages({ "any.required": "Favorite is required" }),
+});

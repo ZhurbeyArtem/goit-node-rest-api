@@ -2,35 +2,34 @@ import * as fs from "fs/promises";
 import * as path from "path";
 import { nanoid } from "nanoid";
 
+import { Contact } from "../mongoose/schemas/contact.js";
 import HttpError from "../helpers/HttpError.js";
 const contactsPath = path.join(path.resolve(), `/db/contacts.json`);
 
 export async function listContacts() {
   try {
-    const data = await fs.readFile(contactsPath, "utf8");
-    return JSON.parse(data);
+    const data = await Contact.find();
+    return data;
   } catch (e) {
     throw new Error("Ops something happened wrong");
   }
 }
 export async function getContactById(contactId) {
   try {
-    const list = await listContacts();
-    return list.find((el) => el.id === contactId) || null;
+    const data = await Contact.findById(contactId).exec();
+    return data;
   } catch (e) {
+    console.log(e);
     throw new Error("Ops something happened wrong");
   }
 }
 
 export async function removeContact(contactId) {
   try {
-    const list = await listContacts();
-    const contact = await getContactById(contactId);
+    const contact = await Contact.findOneAndDelete({ _id: contactId }).exec();
     if (!contact) {
       throw HttpError(404, "Not Found");
     }
-    const newList = list.filter((el) => el.id !== contact.id);
-    await fs.writeFile(contactsPath, JSON.stringify(newList));
     return contact;
   } catch (e) {
     throw {
@@ -42,13 +41,20 @@ export async function removeContact(contactId) {
 
 export async function addContact({ name, email, phone }) {
   try {
-    const list = await listContacts();
-    const user = { name, email, phone, id: nanoid() };
-    list.push(user);
-    await fs.writeFile(contactsPath, JSON.stringify(list));
+    const user = { name, email, phone };
+    const findByPhone = await Contact.findOne({ phone: phone });
+    if (findByPhone)
+      throw HttpError(403, "Contact with same phone number already exist");
+    const findByEmail = await Contact.findOne({ email: email });
+    if (findByEmail)
+      throw HttpError(403, "Contact with same email already exist");
+    await Contact.create(user);
     return user;
   } catch (e) {
-    throw new Error("Ops something happened wrong");
+    throw {
+      message: e.message || "Ops something happened wrong",
+      status: e.status || 500,
+    };
   }
 }
 
@@ -57,21 +63,36 @@ export async function updateContactService(id, { name, email, phone }) {
     if (!name && !email && !phone) {
       throw HttpError(400, "Body must have at least one field");
     }
-    const user = await getContactById(id);
+    const user = await Contact.findByIdAndUpdate(
+      id,
+      { name, email, phone },
+      {
+        returnDocument: "after",
+      }
+    ).exec();
     if (!user) {
       throw HttpError(404, "Not Found");
     }
-    const newUser = {
-      ...user,
-      name: name || user.name,
-      email: email || user.email,
-      phone: phone || user.phone,
+
+    return user;
+  } catch (e) {
+    throw {
+      message: e.message || "Ops something happened wrong",
+      status: e.status || 500,
     };
-    const list = await listContacts();
-    const newList = list.filter((el) => el.id !== user.id);
-    newList.push(newUser);
-    await fs.writeFile(contactsPath, JSON.stringify(newList));
-    return newUser;
+  }
+}
+
+export async function updateContactFavoriteService(id, favorite) {
+  try {
+    const user = await Contact.findByIdAndUpdate(id, favorite, {
+      returnDocument: "after",
+    }).exec();
+    if (!user) {
+      throw HttpError(404, "Not Found");
+    }
+
+    return user;
   } catch (e) {
     throw {
       message: e.message || "Ops something happened wrong",

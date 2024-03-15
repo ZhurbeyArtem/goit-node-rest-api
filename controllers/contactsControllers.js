@@ -4,6 +4,7 @@ import {
   getContactById,
   listContacts,
   updateContactService,
+  updateContactFavoriteService,
 } from "../services/contactsServices.js";
 
 export const getAllContacts = async (req, res) => {
@@ -46,6 +47,17 @@ export const createContact = async (req, res) => {
 export const updateContact = async (req, res) => {
   try {
     const contacts = await updateContactService(req.params.id, req.body);
+    res.json(contacts);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+export const updateContactFavorite = async (req, res) => {
+  try {
+    const contacts = await updateContactFavoriteService(
+      req.params.id,
+      req.body
+    );
     res.json(contacts);
   } catch (error) {
     res.status(500).json({ message: error.message });
