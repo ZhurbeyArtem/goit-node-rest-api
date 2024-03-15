@@ -44,10 +44,10 @@ export async function addContact({ name, email, phone }) {
     const user = { name, email, phone };
     const findByPhone = await Contact.findOne({ phone: phone });
     if (findByPhone)
-      throw HttpError(403, "Contact with same phone number already exist");
+      throw HttpError(409, "Contact with same phone number already exist");
     const findByEmail = await Contact.findOne({ email: email });
     if (findByEmail)
-      throw HttpError(403, "Contact with same email already exist");
+      throw HttpError(409, "Contact with same email already exist");
     await Contact.create(user);
     return user;
   } catch (e) {
