@@ -1,16 +1,23 @@
-import * as fs from "fs/promises";
-import * as path from "path";
-import { nanoid } from "nanoid";
-
 import { Contact } from "../mongoose/schemas/contact.js";
 import HttpError from "../helpers/HttpError.js";
-const contactsPath = path.join(path.resolve(), `/db/contacts.json`);
 
-export async function listContacts() {
+export async function listContacts({ page = 1, limit = 10, favorite}) {
   try {
-    const data = await Contact.find();
-    return data;
+   let query = {};
+   if (favorite !== undefined) {
+     query.favorite = favorite;
+   }
+    const data = await Contact.find(query)
+      .skip((page - 1) * limit)
+      .limit(limit)
+      .exec();
+    const total = await Contact.countDocuments(query);
+    return {
+      contacts: data,
+      totalPages: Math.ceil(total / limit),
+    };
   } catch (e) {
+    console.log(e);
     throw new Error("Ops something happened wrong");
   }
 }

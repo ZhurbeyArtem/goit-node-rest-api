@@ -2,8 +2,10 @@ import express from "express";
 import morgan from "morgan";
 import cors from "cors";
 import mongoose from "mongoose";
+import dotenv from "dotenv";
+dotenv.config();
 
-import contactsRouter from "./routes/contactsRouter.js";
+import mainRouter from "./routes/index.js";
 
 const app = express();
 
@@ -13,7 +15,7 @@ app.use(express.json());
 
 async function main() {
   try {
-    await mongoose.connect("mongodb://127.0.0.1:27017/db-contacts");
+    await mongoose.connect(process.env.DB_URL);
     console.log("Database connection successful");
     app.listen(3000, () => {
       console.log("Server is running. Use our API on port: 3000");
@@ -23,7 +25,7 @@ async function main() {
     process.exit(1);
   }
 }
-app.use("/api/contacts", contactsRouter);
+app.use("/api", mainRouter);
 
 app.use((_, res) => {
   res.status(404).json({ message: "Route not found" });
