@@ -6,13 +6,15 @@ export const authMiddleware = async (req, res, next) => {
     next();
   }
   try {
-    const token = req.headers.authorization.split(" ")[1];
+    const auth = req.headers.authorization.split(" ");
+    if (auth[0] !== "Bearer") throw Error;
+    const token = auth[1];
     if (!token) {
       throw Error;
     }
     const decoded = jwt.verify(token, process.env.SECRET);
     const user = await findUserById(decoded.id);
-    if (user.token !== token || !user) {
+    if (!user || user.token !== token) {
       throw Error;
     }
     req.user = decoded;
