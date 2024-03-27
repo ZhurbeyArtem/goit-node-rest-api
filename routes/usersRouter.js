@@ -5,10 +5,14 @@ import {
   logoutController,
   currentUserController,
   updateSubscriptionController,
+  updateAvatarController,
 } from "../controllers/usersControllers.js";
 import { validateBody } from "../helpers/validateBody.js";
-import { authSchema, updateSubscriptionSchema } from "../schemas/usersSchemas.js";
-import { authMiddleware } from "../helpers/authMiddleware.js";
+import {
+  authSchema,
+  updateSubscriptionSchema,
+} from "../schemas/usersSchemas.js";
+import { authMiddleware } from "../middlewares//authMiddleware.js";
 
 const usersRouter = express.Router();
 
@@ -25,6 +29,11 @@ usersRouter.patch(
   validateBody(updateSubscriptionSchema),
   authMiddleware,
   updateSubscriptionController
+);
+usersRouter.patch(
+  "/avatars",
+  authMiddleware,
+  updateAvatarController
 );
 
 export default usersRouter;

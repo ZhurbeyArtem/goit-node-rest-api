@@ -3,15 +3,22 @@ import morgan from "morgan";
 import cors from "cors";
 import mongoose from "mongoose";
 import dotenv from "dotenv";
+import { fileURLToPath } from "url";
+import { dirname, join } from "path";
 dotenv.config();
 
 import mainRouter from "./routes/index.js";
 
+
 const app = express();
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 
 app.use(morgan("tiny"));
 app.use(cors());
 app.use(express.json());
+
+app.use('/avatars',express.static(join(__dirname, "public/avatars")));
 
 async function main() {
   try {

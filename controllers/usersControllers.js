@@ -4,6 +4,7 @@ import {
   registration,
   currentUser,
   updateSubscription,
+  updateAvatar,
 } from "../services/usersServices.js";
 
 export const registrationController = async (req, res) => {
@@ -49,6 +50,18 @@ export const updateSubscriptionController = async (req, res) => {
       req.body
     );
     res.json(user);
+  } catch (error) {
+    res.status(error.status).json({ message: error.message });
+  }
+};
+export const updateAvatarController = async (req, res) => {
+  try {
+    const result = await updateAvatar(
+      req.headers.authorization.split(" ")[1],
+      req
+    );
+    console.log(result);
+    res.json(result);
   } catch (error) {
     res.status(error.status).json({ message: error.message });
   }

@@ -1,7 +1,7 @@
 import { Router } from "express";
 import contactsRouter from "./contactsRouter.js";
 import usersRouter from "./usersRouter.js";
-import { authMiddleware } from "../helpers/authMiddleware.js";
+import { authMiddleware } from "../middlewares/authMiddleware.js";
 
 const mainRouter = Router();
 

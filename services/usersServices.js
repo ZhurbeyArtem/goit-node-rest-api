@@ -1,7 +1,14 @@
 import bcrypt from "bcryptjs";
+import jwt from "jsonwebtoken";
+import gravatar from "gravatar";
+import fs from "fs";
+import path from "path";
+import { fileURLToPath } from "url";
+import multer from "multer";
+import Jimp from "jimp";
+
 import { User } from "../mongoose/schemas/users.js";
 import HttpError from "../helpers/HttpError.js";
-import jwt from "jsonwebtoken";
 
 export async function registration({ email, password }) {
   try {
@@ -13,6 +20,7 @@ export async function registration({ email, password }) {
     const newUser = new User({
       email,
       password: hashedPassword,
+      avatarURL: gravatar.url(email),
     });
     await newUser.save();
     return {
@@ -144,7 +152,7 @@ export async function currentUser({ token }) {
     };
   }
 }
-export async function updateSubscription( token, {subscription}) {
+export async function updateSubscription(token, { subscription }) {
   try {
     const user = await User.findOne({ token }).exec();
     if (!user) {
@@ -161,6 +169,73 @@ export async function updateSubscription( token, {subscription}) {
       subscription: user.subscription,
     };
   } catch (error) {
+    throw {
+      message: error.status.message || "Ops something happened wrong",
+      status: error.status.code || 500,
+    };
+  }
+}
+
+export async function updateAvatar(token, req) {
+  try {
+    const user = await User.findOne({ token }).exec();
+    if (!user) {
+      throw HttpError({
+        status: "error",
+        code: 401,
+        message: "Not authorized",
+      });
+    }
+
+    const decoded = jwt.verify(token, process.env.SECRET);
+    const userUniqueName = decoded.email.split("@")[0];
+    const __filename = fileURLToPath(import.meta.url);
+    const __dirname = path.dirname(__filename);
+    const tmp = path.join(__dirname, "..", "tmp");
+    const avatars = path.join(__dirname, "..", "public/avatars");
+    const storage = multer.diskStorage({
+      destination: function (req, file, cb) {
+        cb(null, tmp);
+      },
+      filename: function (req, file, cb) {
+        const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
+        cb(null, userUniqueName + "-" + uniqueSuffix + "-" + file.originalname);
+      },
+    });
+    const upload = multer({ storage: storage }).single("avatar");
+
+    const fileName = await new Promise((resolve, reject) => {
+      upload(req, {}, function (err) {
+        if (err instanceof multer.MulterError || err) {
+          throw HttpError({
+            status: "error",
+            code: 500,
+            message: err.message,
+          });
+        }
+        const fileName = req.file.filename;
+        resolve(fileName);
+      });
+    });
+
+    const img = await Jimp.read(`${tmp}/${fileName}`);
+    img.resize(250, 250);
+    img.write(avatars + "/" + fileName);
+
+    fs.unlink(`${tmp}/${fileName}`, (err) => {
+      if (err) {
+        throw HttpError({
+          status: "error",
+          code: 500,
+          message: err.message,
+        });
+      }
+    });
+    user.avatarURL = `/avatars/${fileName}`;
+    await user.save();
+    return `/avatars/${fileName}`;
+  } catch (error) {
+    console.log(error);
     throw {
       message: error.status.message || "Ops something happened wrong",
       status: error.status.code || 500,
